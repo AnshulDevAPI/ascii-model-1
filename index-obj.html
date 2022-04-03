@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>FBX Loading</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+        html, body{
+            padding: 0;
+            margin: 0;
+        }
+    </style>
+    </head>
+
+	<body>
+		<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "https://threejs.org/build/three.module.js"
+				}
+			}
+		</script>
+
+		<script type="module">
+
+
+			import * as THREE from 'three';
+			import { PointerLockControls } from 'https://threejs.org/examples/jsm/controls/PointerLockControls.js';
+			import { OrbitControls } from 'https://threejs.org/examples/jsm/controls/OrbitControls.js';
+			import { FBXLoader } from 'https://threejs.org/examples/jsm/loaders/FBXLoader.js';
+			import { OBJLoader } from 'https://threejs.org/examples/jsm/loaders/OBJLoader.js';
+			import { AsciiEffect } from 'https://threejs.org/examples/jsm/effects/AsciiEffect.js';
+
+
+			var camera, scene, renderer, controls, effect, container, model;
+			let characters = ' .:-+*=%@#'
+			const effectSize = { amount: .110 }
+			let backgroundColor = 'black'
+			let ASCIIColor = 'white'
+			const sizes = {
+				width: window.innerWidth,
+				height: window.innerHeight
+			}
+			function createEffect() {
+				effect = new AsciiEffect(renderer, characters, { invert: true, resolution: effectSize.amount });
+				effect.setSize(sizes.width, sizes.height);
+				effect.domElement.style.color = ASCIIColor;
+				effect.domElement.style.backgroundColor = backgroundColor;
+			}
+
+			init();
+			animate();
+
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+                camera.position.set( 0, 0, 200 );
+
+				scene = new THREE.Scene();
+
+
+				const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+				hemiLight.position.set( 0, 50, 0 );
+				scene.add( hemiLight );
+
+				const dirLight = new THREE.DirectionalLight( 0xffffff );
+				dirLight.position.set( 0, 2, 500 );
+				dirLight.castShadow = true;
+				scene.add( dirLight );
+				const loader = new OBJLoader();
+				loader.load( 'model/lainroom_ooooobj.obj', function ( object ) {
+                    controls = new OrbitControls(camera, effect.domElement);
+					controls.enableRotate = false;
+					console.log(controls)
+					var box = new THREE.Box3().setFromObject( object );
+					var center = new THREE.Vector3();
+					box.getCenter( center );
+					object.position.sub( center ); 
+					object.rotation.y = Math.PI; 
+					
+					// object.material.flatShading = true;
+					for(let node of object.children){
+						console.log(node)
+						node.flatShading = true;
+					}
+					scene.add( object );
+					model = object;
+				} );
+				renderer = new THREE.WebGLRenderer();
+				window.addEventListener( 'resize', onWindowResize );
+				createEffect();
+				container.appendChild(effect.domElement)
+
+			}
+
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				effect.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function animate() {
+				requestAnimationFrame( animate );
+				if(model){
+					model.rotateY(0.001)
+				}
+				effect.render( scene, camera );
+			}
+		</script>
+
+	</body>
+</html>

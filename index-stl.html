@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>FBX Loading</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+        html, body{
+            padding: 0;
+            margin: 0;
+        }
+    </style>
+    </head>
+
+	<body>
+		<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "https://threejs.org/build/three.module.js"
+				}
+			}
+		</script>
+
+		<script type="module">
+
+
+			import * as THREE from 'three';
+			import { PointerLockControls } from 'https://threejs.org/examples/jsm/controls/PointerLockControls.js';
+			import { OrbitControls } from 'https://threejs.org/examples/jsm/controls/OrbitControls.js';
+			import { STLLoader } from 'https://threejs.org/examples/jsm/loaders/STLLoader.js';
+			import { OBJLoader } from 'https://threejs.org/examples/jsm/loaders/OBJLoader.js';
+			import { AsciiEffect } from 'https://threejs.org/examples/jsm/effects/AsciiEffect.js';
+
+
+			var camera, scene, renderer, controls, effect, container, model;
+			let characters = ' .:-+*=%@#'
+			const effectSize = { amount: .110 }
+			let backgroundColor = 'black'
+			let ASCIIColor = 'white'
+			const sizes = {
+				width: window.innerWidth,
+				height: window.innerHeight
+			}
+			function createEffect() {
+				effect = new AsciiEffect(renderer, characters, { invert: true, resolution: effectSize.amount });
+				effect.setSize(sizes.width, sizes.height);
+				effect.domElement.style.color = ASCIIColor;
+				effect.domElement.style.backgroundColor = backgroundColor;
+			}
+
+			init();
+			animate();
+
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+                camera.position.set( 0, 0, 10 );
+
+				scene = new THREE.Scene();
+
+
+				const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+				hemiLight.position.set( 0, 50, 0 );
+				scene.add( hemiLight );
+
+				const dirLight = new THREE.DirectionalLight( 0xffffff );
+				dirLight.position.set( 0, 2, 500 );
+				dirLight.castShadow = true;
+				scene.add( dirLight );
+				// const loader = new STLLoader();
+				// loader.load( 'model/Accela.stl', function ( m ) {
+                //     controls = new OrbitControls(camera, effect.domElement);
+				// 	controls.enableRotate = false;
+				// 	// var box = new THREE.Box3().setFromObject( object );
+				// 	// var center = new THREE.Vector3();
+				// 	// box.getCenter( center );
+				// 	// object.position.sub( center ); 
+				// 	// object.rotation.y = Math.PI; 
+				// 	scene.add( m );
+				// 	// model = object;
+				// } );
+
+				const loader = new STLLoader()
+				loader.load(
+					'model/Accela.stl',
+					function (geometry) {
+						controls = new OrbitControls(camera, effect.domElement);
+						controls.enableRotate=false;
+						// const geometry = loader.parse(result);
+						const material = new THREE.MeshStandardMaterial()
+						material.flatShading = true
+						material.side = THREE.DoubleSide;
+						const mesh = new THREE.Mesh(geometry, material)
+
+						var tempGeometry = new THREE.Mesh(geometry, material)
+						mesh.position.copy = (tempGeometry.position)
+
+						geometry.computeVertexNormals();
+						mesh.geometry.center()
+						model = mesh
+						scene.add(mesh)
+					},
+					(xhr) => {
+						console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+					},
+					(error) => {
+						console.log(error)
+					}
+				)
+				renderer = new THREE.WebGLRenderer();
+				window.addEventListener( 'resize', onWindowResize );
+				createEffect();
+				container.appendChild(effect.domElement)
+
+			}
+
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				effect.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function animate() {
+				requestAnimationFrame( animate );
+				if(model){
+					model.rotateY(0.01)
+				}
+				effect.render( scene, camera );
+			}
+		</script>
+
+	</body>
+</html>
